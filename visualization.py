@@ -55,7 +55,7 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             # Получаем уникальные классы
             unique_classes = np.unique(y_test)
             
-            # Для каждого класса ROC-кривые
+            # Для каждого класса строим ROC-кривую
             for class_id in range(n_classes):
                 # Для бинарной классификации используем специальный подход
                 if n_classes == 2:
@@ -94,7 +94,7 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             kind='bar',
             figsize=(12, 6),
             rot=0,
-            grid=True 
+            grid=True  # Добавляем сетку
         )
         plt.title("Сравнение моделей по метрикам", pad=20)
         plt.ylabel("Значение метрики")
@@ -112,7 +112,7 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
 
         print("Данные сохранены в 'model_comparison.xlsx'")
     
-    # Визуализация времени выполнения
+    # Визуализация времени выполнения (упрощенная версия)
     def vis_timing():
         if timing_results is None:
             print("No timing data available")
@@ -145,7 +145,7 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             plt.rcParams.update({'font.size': 18})
             plt.show()
             
-            # Вывод таблицы с времнем
+            # Вывод таблицы с временем
             print("\n" + "="*60)
             print("ВРЕМЯ ВЫПОЛНЕНИЯ МОДЕЛЕЙ")
             print("="*60)

@@ -46,36 +46,23 @@ param_grids = {
         'kernel': ['linear', 'rbf', 'poly'],
         'gamma': ['scale', 'auto', 0.1, 0.01]
     },
-    "Random Forest": {
-        'n_estimators': [50, 100, 200],
-        'max_depth': [None, 10, 20, 30],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4]
-    },
-    "Decision Tree": {
-        'max_depth': [None, 10, 20, 30],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4],
-        'criterion': ['gini', 'entropy']
-    },
     "KNN": {
         'n_neighbors': [3, 5, 7, 9, 11],
         'weights': ['uniform', 'distance'],
         'metric': ['euclidean', 'manhattan', 'minkowski']
     }
     
+
 }
 
 # Инициализация моделей
 models = {
     "SVM": SVC(probability=True, random_state=42),
-    #"Random Forest": RandomForestClassifier(random_state=42),
     "KNN": KNeighborsClassifier(),
     "Naive Bayes": GaussianNB(),
-    #"Decision Tree": DecisionTreeClassifier(random_state=42)
 }
 
-# Для ROC-AUC нужно бинаризировать метки классов 
+# Для ROC-AUC нужно бинаризировать метки классов (One-vs-Rest)
 # Получаем уникальные классы
 classes = np.unique(y)
 n_classes = len(classes)
@@ -93,7 +80,7 @@ print("=== GRID SEARCH RESULTS ===")
 for name, model in models.items():
     print(f"\n--- {name} ---")
     
-    # Выполнение Grid Search для моделей
+    # Выполнение Grid Search для моделей, у которых есть гиперпараметры для настройки
     if name in param_grids:
         if name in ["SVM", "KNN"]:
             X_train_used = X_train_scaled
@@ -121,7 +108,7 @@ for name, model in models.items():
         print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
         
     else:
-        # Для моделей без гиперпараметров
+        # Для моделей без Grid Search
         best_params[name] = "No hyperparameters to tune"
         print("No hyperparameter tuning needed")
         

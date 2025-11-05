@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 
 def comb():
     # Пути к папкам с данными
@@ -49,6 +50,66 @@ def comb():
 
     return data
 
-# Вызываем функцию
-if __name__ == "__main__":
-    data = comb()
+def augment_data(data = comb(), augmentation_factor=2):
+    """
+    Увеличивает выборку в augmentation_factor раз с помощью аугментации данных
+    
+    Parameters:
+    data - исходный DataFrame с данными
+    augmentation_factor - во сколько раз увеличить выборку (по умолчанию 2)
+    """
+    if augmentation_factor < 2:
+        return data
+    
+    augmented_data = data.copy()
+    
+    # Определяем количество новых образцов для создания
+    original_size = len(data)
+    samples_to_create = original_size * (augmentation_factor - 1)
+    
+    print(f"Исходный размер выборки: {original_size}")
+    print(f"Создаем {samples_to_create} новых образцов...")
+    
+    # Получаем только числовые данные (без метки класса в первом столбце)
+    numeric_data = data.iloc[:, 1:].values
+    labels = data.iloc[:, 0].values
+    
+    # Создаем новые образцы
+    for i in range(samples_to_create):
+        # Случайно выбираем исходный образец
+        original_idx = np.random.randint(0, original_size)
+        original_sample = numeric_data[original_idx].copy()
+        original_label = labels[original_idx]
+        
+        # Выбираем метод аугментации 'noise', 'scaling', 'smoothing'
+        method = 'smoothing'
+        if method == 'noise':
+            # Добавление гауссовского шума
+            noise = np.random.normal(0, 0.01, original_sample.shape)
+            augmented_sample = original_sample + noise
+            
+        elif method == 'scaling':
+            # Масштабирование амплитуды
+            scale_factor = np.random.uniform(0.8, 1.2)
+            augmented_sample = original_sample * scale_factor
+                
+        elif method == 'smoothing':
+            # Легкое сглаживание
+            window_size = 3
+            if len(original_sample) > window_size:
+                augmented_sample = np.convolve(original_sample, np.ones(window_size)/window_size, mode='same')
+            else:
+                augmented_sample = original_sample
+        
+        # Добавляем метку класса в начало
+        augmented_row = pd.Series([original_label] + list(augmented_sample))
+        
+        # Добавляем новый образец в DataFrame
+        augmented_data = pd.concat([augmented_data, augmented_row.to_frame().T], ignore_index=True)
+    
+    print(f"Финальный размер выборки: {len(augmented_data)}")
+    
+    # Сохраняем аугментированные данные
+    augmented_data.to_csv('augmented_combined_data.csv', index=False)
+    
+    return augmented_data
