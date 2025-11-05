@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_predict, GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_predict
 from sklearn.preprocessing import StandardScaler, LabelBinarizer
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
@@ -20,42 +20,24 @@ import comb2
 import vist
 import visualization
 
+from grid_search import grid_search_base, grid_search_meta
+
 # Загрузка данных
-data = comb2.comb()
-data = pd.read_csv('combined_data.csv')
+data = comb.comb()
+#data = comb.augment_data()
+#data = pd.read_csv('combined_data.csv')
 
 # Разделение данных на признаки (X) и целевую переменную (y)
 X = data.iloc[:, 1:]  # Все столбцы, кроме первого (класс)
 y = data.iloc[:, 0]   # Первый столбец (класс)
 
 # Разделение данных на обучающую и тестовую выборки
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
 # Стандартизация данных (для SVM и KNN)
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
-
-# Определение гиперпараметров для Grid Search базовых моделей
-base_param_grids = {
-    "SVM": {
-        'C': [0.1, 1, 10],
-        'kernel': ['linear', 'rbf'],
-        'gamma': ['scale', 'auto']
-    },
-    "KNN": {
-        'n_neighbors': [3, 5, 7],
-        'weights': ['uniform', 'distance'],
-        'metric': ['euclidean', 'manhattan']
-    }
-}
-
-# Определение гиперпараметров для метамодели
-meta_param_grid = {
-    'C': [0.1, 1, 10],
-    'solver': ['liblinear', 'lbfgs'],
-    'max_iter': [100, 200]
-}
 
 # Базовые модели с Grid Search
 base_models = {
@@ -76,61 +58,12 @@ n_classes = len(np.unique(y))
 
 # Словарь для хранения результатов
 results = {}
-best_params = {}
-
 print("=== GRID SEARCH FOR BASE MODELS ===")
 
 # Оптимизация гиперпараметров базовых моделей
-optimized_base_models = {}
-
-for name, model in base_models.items():
-    print(f"\n--- Optimizing {name} ---")
-    
-    if name in base_param_grids:
-        if name in ["SVM", "KNN"]:
-            X_train_used = X_train_scaled
-        else:
-            X_train_used = X_train
-            
-        grid_search = GridSearchCV(
-            estimator=model,
-            param_grid=base_param_grids[name],
-            cv=4,
-            scoring='accuracy',
-            n_jobs=-1,
-            verbose=1
-        )
-        
-        grid_search.fit(X_train_used, y_train)
-        
-        # Сохранение лучших параметров и модели
-        best_params[f"Base_{name}"] = grid_search.best_params_
-        optimized_base_models[name] = grid_search.best_estimator_
-        
-        print(f"Best parameters for {name}: {grid_search.best_params_}")
-        print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
-        
-    else:
-        # Для моделей без Grid Search
-        if name in ["SVM", "KNN"]:
-            model.fit(X_train_scaled, y_train)
-        else:
-            model.fit(X_train, y_train)
-            
-        optimized_base_models[name] = model
-        best_params[f"Base_{name}"] = "No hyperparameters to tune"
-        print(f"No hyperparameter tuning for {name}")
+optimized_base_models, best_params = grid_search_base(base_models, X_train_scaled, X_train, y_train)
 
 print("\n=== GRID SEARCH FOR META MODEL ===")
-# Оптимизация гиперпараметров метамодели
-meta_grid_search = GridSearchCV(
-    estimator=meta_model,
-    param_grid=meta_param_grid,
-    cv=4,
-    scoring='accuracy',
-    n_jobs=-1,
-    verbose=1
-)
 
 # Создаем фичи для метамодели для оптимизации
 print("Creating meta-features for meta-model optimization...")
@@ -140,12 +73,7 @@ nb_proba = cross_val_predict(optimized_base_models["Naive Bayes"], X_train_scale
 
 X_meta_train = np.column_stack([svm_proba, knn_proba, nb_proba])
 
-meta_grid_search.fit(X_meta_train, y_train)
-best_meta_model = meta_grid_search.best_estimator_
-best_params["Meta_Model"] = meta_grid_search.best_params_
-
-print(f"Best parameters for Meta Model: {meta_grid_search.best_params_}")
-print(f"Best cross-validation score for Meta Model: {meta_grid_search.best_score_:.4f}")
+best_meta_model, best_params["Meta_Model"] = grid_search_meta(meta_model, X_meta_train, y_train, best_params)
 
 # Функция для создания стекинга из двух моделей с оптимизированными гиперпараметрами
 def create_stacking_pair(model1_name, model1, model2_name, model2, meta, X_tr, X_te, y_tr, scaler_required=True):
