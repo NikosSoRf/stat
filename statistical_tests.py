@@ -35,7 +35,6 @@ def clone_model(model):
     """Клонирование модели с сохранением параметров"""
     if hasattr(model, 'get_params'):
         params = model.get_params()
-        # Для SVM нужно особое обращение с probability
         if hasattr(model, 'probability'):
             params['probability'] = True
         return type(model)(**params)
@@ -61,21 +60,21 @@ def evaluate_stacking_cv(model1, model2, meta_model, X, y, cv=5, scaler_required
             X_train_fold_scaled = X_train_fold
             X_val_fold_scaled = X_val_fold
         
-        # Обучаем базовые модели и создаем мета-признаки для обучения
+        # Базовые модели + мета-признаки для обучения
         model1_clone = clone_model(model1)
         model2_clone = clone_model(model2)
         meta_clone = clone_model(meta_model)
         
-        # Создаем прогнозы для метамодели с помощью cross-validation на тренировочных данных
+        # Прогнозы для метамодели с помощью cross-validation на тренировочных данных
         from sklearn.model_selection import cross_val_predict
         model1_proba = cross_val_predict(model1_clone, X_train_fold_scaled, y_train_fold, cv=3, method='predict_proba')
         model2_proba = cross_val_predict(model2_clone, X_train_fold_scaled, y_train_fold, cv=3, method='predict_proba')
         
-        # Обучаем метамодель
+        # Обучение
         X_meta_train = np.column_stack([model1_proba, model2_proba])
         meta_clone.fit(X_meta_train, y_train_fold)
         
-        # Обучаем базовые модели на всех тренировочных данных
+        # Обучение базовых моделей 
         model1_clone.fit(X_train_fold_scaled, y_train_fold)
         model2_clone.fit(X_train_fold_scaled, y_train_fold)
         
@@ -103,7 +102,7 @@ def perform_statistical_tests(models_data):
     y_train = models_data["y_train"]
     results = models_data["results"]
     
-    # Собираем результаты кросс-валидации для всех моделей
+    # Собираем результаты 
     print("\n--- Кросс-валидационная оценка моделей (10-fold CV) ---")
     
     cv_scores = {}
@@ -112,7 +111,6 @@ def perform_statistical_tests(models_data):
     for name, model in optimized_base_models.items():
         print(f"Оценка базовой модели {name}...")
         try:
-            # Для SVM и KNN нужен скейлер, для Naive Bayes - нет
             needs_scaling = name in ["SVM", "KNN"]
             if needs_scaling:
                 scores = evaluate_model_cv(model, X_train, y_train, cv=5, scaler_required=True)
@@ -145,7 +143,6 @@ def perform_statistical_tests(models_data):
                 print(f"  {stack_name}: Средняя accuracy = {np.mean(scores):.4f} ± {np.std(scores):.4f}")
             except Exception as e:
                 print(f"  Ошибка при оценке {stack_name}: {e}")
-                # Резервный вариант - используем результаты из тестовой выборки
                 if stack_name in results:
                     base_acc = results[stack_name]["Accuracy"]
                     # Фиксируем random seed для воспроизводимости
@@ -174,7 +171,7 @@ def perform_statistical_tests(models_data):
             except Exception as e:
                 print(f"{model1} vs {model2:<20} {'Ошибка':>10} {'-':>14} {'-':>10}")
     
-        # Доверительные интервалы для accuracy
+        # Доверительные интервалы
         print("\n--- ДОВЕРИТЕЛЬНЫЕ ИНТЕРВАЛЫ ДЛЯ ACCURACY (95%) ---")
         print(f"{'Модель':<25} {'Средняя Accuracy':<18} {'Std':<10} {'ДИ (нижн.)':<12} {'ДИ (верхн.)':<12}")
         print("-"*80)
@@ -193,7 +190,7 @@ def perform_statistical_tests(models_data):
     else:
         print("\nНедостаточно моделей для статистического сравнения")
     
-    # Ранжирование моделей по средней accuracy (ИСПРАВЛЕНО - убрано дублирование)
+    # Ранжирование моделей по средней accuracy
     if cv_scores:
         print("\n--- РАНЖИРОВАНИЕ МОДЕЛЕЙ ПО ТОЧНОСТИ ---")
         model_ranking = []
@@ -202,10 +199,10 @@ def perform_statistical_tests(models_data):
             std_acc = np.std(scores)
             model_ranking.append((model_name, mean_acc, std_acc))
         
-        # Сортируем по убыванию accuracy и убираем дубликаты
+        # Сортируем по убыванию accuracy 
         model_ranking.sort(key=lambda x: x[1], reverse=True)
         
-        # Убираем дубликаты по имени модели
+        # Проверка на дублирующие записи
         seen_models = set()
         unique_ranking = []
         for model_name, mean_acc, std_acc in model_ranking:

@@ -22,12 +22,11 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             
             plt.figure(figsize=(6, 5))
             plt.rcParams.update({'font.size': 18})
-            # Create heatmap using matplotlib
+
             plt.imshow(cm, interpolation='nearest', cmap='Blues')
             plt.title(f"Confusion Matrix - {model}")
             plt.colorbar()
             
-            # Add annotations
             for i in range(cm.shape[0]):
                 for j in range(cm.shape[1]):
                     plt.text(j, i, str(cm[i, j]),
@@ -38,34 +37,27 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             plt.xlabel("Predicted")
             plt.ylabel("True")
             
-            # Set tick labels if needed (assuming binary classification)
             if cm.shape[0] == 2:
                 plt.xticks([0, 1], ["Negative", "Positive"])
                 plt.yticks([0, 1], ["Negative", "Positive"])
             
             plt.show()
     
-    # Визуализация ROC-кривых (для каждого класса)
+    # Визуализация ROC-кривых
     def vis_ROC():
         for model, metrics in results.items():
             y_proba = metrics["Probability Predictions"]
             
             plt.figure(figsize=(8, 6))
             plt.rcParams.update({'font.size': 18})
-            # Получаем уникальные классы
             unique_classes = np.unique(y_test)
             
             # Для каждого класса строим ROC-кривую
             for class_id in range(n_classes):
-                # Для бинарной классификации используем специальный подход
                 if n_classes == 2:
-                    # Определяем текущий класс
                     current_class = unique_classes[class_id]
-                    
-                    # Создаем бинарные метки для текущего класса
                     y_binary = (y_test == current_class).astype(int)
                     
-                    # Используем вероятности для текущего класса
                     RocCurveDisplay.from_predictions(
                         y_binary,
                         y_proba[:, class_id],
@@ -94,41 +86,38 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             kind='bar',
             figsize=(12, 6),
             rot=0,
-            grid=True  # Добавляем сетку
+            grid=True 
         )
         plt.title("Сравнение моделей по метрикам", pad=20)
         plt.ylabel("Значение метрики")
-        plt.ylim(0, 1.1)  # Фиксируем диапазон для наглядности
+        plt.ylim(0, 1.1)
         plt.tight_layout()
         plt.rcParams.update({'font.size': 14})
         plt.show()
 
-        # Создаём DataFrame с метриками
         metrics_df = pd.DataFrame(results).T
         metrics_df = metrics_df[["Accuracy", "Precision", "Recall", "F1 Score", "ROC-AUC"]]
 
-        # Сохраняем в Excel (без форматирования)
+        # Сохраняем в Excel 
         metrics_df.to_excel("model_comparison.xlsx", index_label="Model")
 
         print("Данные сохранены в 'model_comparison.xlsx'")
     
-    # Визуализация времени выполнения (упрощенная версия)
+    # Визуализация времени выполнения упрощенно 
     def vis_timing():
         if timing_results is None:
             print("No timing data available")
             return
         
-        # Создаем DataFrame с временными метриками
         timing_df = pd.DataFrame(timing_results).T
         
-        # Переименовываем колонки для consistency
         timing_df = timing_df.rename(columns={
             "Training Time": "Training Time (s)",
             "Prediction Time": "Prediction Time (s)", 
             "Total Time": "Total Time (s)"
         })
         
-        # Временные метрики (если есть)
+        # Временные метрики
         time_metrics = ["Training Time (s)", "Prediction Time (s)", "Total Time (s)"]
         available_time_metrics = [m for m in time_metrics if m in timing_df.columns]
         
@@ -160,7 +149,6 @@ def visualization(results, y_test, y_test_binarized, n_classes, timing_results=N
             timing_df.to_excel("model_timing.xlsx", index_label="Model")
             print("Данные о времени сохранены в 'model_timing.xlsx'")
     
-    # Вызываем все функции визуализации
     vis_results()
     vis_CM()
     vis_ROC()
