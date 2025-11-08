@@ -30,12 +30,10 @@ def visualization(results, y_test_binarized, y_test):
             plt.figure(figsize=(6, 5))
             plt.rcParams.update({'font.size': 18})
             
-            # Create heatmap using matplotlib
             plt.imshow(cm, interpolation='nearest', cmap='Blues')
             plt.title(f"{model}")
             plt.colorbar()
             
-            # Add annotations
             for i in range(cm.shape[0]):
                 for j in range(cm.shape[1]):
                     plt.text(j, i, str(cm[i, j]),
@@ -46,14 +44,13 @@ def visualization(results, y_test_binarized, y_test):
             plt.xlabel("Predicted")
             plt.ylabel("True")
             
-            # Set tick labels if needed (assuming binary classification)
             if cm.shape[0] == 2:
                 plt.xticks([0, 1], ["Negative", "Positive"])
                 plt.yticks([0, 1], ["Negative", "Positive"])
             
             plt.show()
     
-    # Визуализация ROC-кривых (для каждого класса)
+    # Визуализация ROC-кривых
     def vis_ROC():
         for model, metrics in results.items():
             y_proba = metrics["Probability Predictions"]
@@ -65,14 +62,14 @@ def visualization(results, y_test_binarized, y_test):
                 # Получаем уникальные классы
                 unique_classes = np.unique(y_test)
                 
-                # Определяем положительный класс (обычно это больший по значению класс)
-                pos_label = unique_classes[1]  # 6.0 в вашем случае
+                # Определяем положительный класс 
+                pos_label = unique_classes[1] 
                 
-                # Классическая ROC-кривая для бинарной классификации
+                # ROC-кривая для бинарной классификации
                 RocCurveDisplay.from_predictions(
                     y_test,
                     y_proba[:, 1],  # Вероятности положительного класса
-                    pos_label=pos_label,  # Явно указываем положительный класс
+                    pos_label=pos_label, 
                     name="ROC Curve",
                     ax=plt.gca()
                 )
@@ -113,7 +110,7 @@ def visualization(results, y_test_binarized, y_test):
         
         plt.show()
 
-        # Временные метрики (если есть)
+        # Временные метрики
         time_metrics = ["Training Time (s)", "Prediction Time (s)", "Total Time (s)"]
         available_time_metrics = [m for m in time_metrics if m in metrics_df.columns]
         
@@ -121,7 +118,7 @@ def visualization(results, y_test_binarized, y_test):
             metrics_df[available_time_metrics].plot(
                 kind='bar',
                 figsize=(12, 6),
-                rot=0,  # горизонтальные подписи
+                rot=0,
                 grid=True
             )
             plt.title("Сравнение времени выполнения моделей", pad=20)
@@ -130,11 +127,10 @@ def visualization(results, y_test_binarized, y_test):
             plt.rcParams.update({'font.size': 18})
             plt.show()
 
-        # Сохраняем в Excel
+        # схранение в Excel
         metrics_df.to_excel("model_comparison.xlsx", index_label="Model")
         print("Данные сохранены в 'model_comparison.xlsx'")
     
-    # Вызываем все функции визуализации
     #vis_results()
     #vis_CM()
     #vis_ROC()
